@@ -9,9 +9,12 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 from forms import CreatePostForm, CreateCommentForm, RegisterForm, LoginForm
 from flask_gravatar import Gravatar
 from functools import wraps
+import os
+
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
+
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 ckeditor = CKEditor(app)
 Bootstrap(app)
 login_manager = LoginManager()
@@ -19,7 +22,7 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 
 ##CONNECT TO DB
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blog.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///blog.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 gravatar = Gravatar(app,
@@ -73,7 +76,7 @@ class Comment(db.Model):
     commenter_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     # user = relationship('User', back_populates='comments')
 
-
+# one to manyについて
 # ForeingnKey外部キー(親テーブルのid)を子テーブル(blog_posts)に設定する
 # authorにUserインスタンスが入るとそれがもつidを取り出してauthor_idに入いり、
 # 一方そのUserインスタンスのblog_postsには外部キーauthor_idの値をもつblogpostが全て入る
@@ -82,6 +85,9 @@ class Comment(db.Model):
 # 逆にoneの方でも自身の外部キー(ここではPKのid)に応じたmanyインスタンスが入るプロパティをrelationship()で設定してmanyへの紐づけを行う。
 # その際には対応するエンティティ(クラス)のどのプロパティに紐づいているを互いにback_populatesパラメータで明示する
 
+# ①manyの方にoneからの外部キーを設定して、
+# ②oneの方でrelationship()を使い、manyとの紐づけを行う。パラメーターとしてmanyのクラス名,manyに作成されるプロパティ名を入れる
+# ③manyには自動的にoneのクラスが入るプロパティが作成され、①で設定したプロパティに外部キーが入り、oneには外部キーに該当するoneオブジェクトがリストで入る
 
 def admin_only(f):
     @wraps(f)
